@@ -16,7 +16,7 @@ async function DashboardPage() {
       {/* Overview */}
 
       {/* Accounts Grid */}
-      <div className='grid gap-4 md:grid-cold-2 lg:grid-cold-3'>
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
         <CreateAccountDrawere>
           <Card className={`hover:shadow-md transition-shadow cursor-pointer border-dashed`}>
             <CardContent className={'flex flex-col items-center justify-center text-muted-foreground h-full pt-5'}>
@@ -25,13 +25,13 @@ async function DashboardPage() {
             </CardContent>
           </Card>
         </CreateAccountDrawere>
+        
+        {accounts.length && 
+          accounts?.map((account) => {
+            return <AccountCard key={account.id} account={account} />
+          }
+        )}
       </div>
-
-      {accounts.length && 
-        accounts?.map((account) => {
-          return <AccountCard key={account.id} account={account} />
-        }
-      )}
     </div>
   )
 }
