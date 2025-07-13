@@ -4,11 +4,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { categoryColors } from '@/data/categories';
 import { format } from 'date-fns';
-import { ChevronDown, ChevronUp, Clock, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, MoreHorizontal, RefreshCw, Search, Trash, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react'
 
@@ -27,6 +29,10 @@ const TransactionTable = ({ transactions }) => {
         field: "date",
         direction: "desc",
     });
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [typeFilter, setTypeFilter] = useState("");
+    const [recurringFilter, setRecurringFilter] = useState("");
 
     const filteredAndSortedTransactions = transactions;
 
@@ -52,9 +58,70 @@ const TransactionTable = ({ transactions }) => {
         )
     }
 
+    const handleBulkDelete = () => {
+
+    }
+
+    const handleClearFilters = () => {
+        setSearchTerm('');
+        setTypeFilter('');
+        setRecurringFilter('');
+        setSelectedIds([]);
+    }
+
   return (
     <div>
         {/* Filters */}
+        <div className='flex flex-col sm:flex-row gap-4'>
+            <div className='relative flex-1'>
+                <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground'/>
+                <Input 
+                    placeholder='Search transactions...'
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className='pl-8' />
+            </div>
+
+            <div className='flex gap-2'>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="INCOME">Income</SelectItem>
+                        <SelectItem value="EXPENSE">Expense</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                <Select 
+                    value={recurringFilter} 
+                    onValueChange={(value) => setRecurringFilter(value)}
+                >
+                    <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="All Transactions" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="recurring">Recurring Only</SelectItem>
+                        <SelectItem value="non-recurring">Non-recurring Only</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                {selectedIds.length > 0 && (
+                    <div>
+                        <Button variant='destructive' size={'sm'} onClick={handleBulkDelete}>
+                            <Trash className='h-4 w-4 mr-2'/>
+                            Delete Selected ({selectedIds.length})
+                        </Button>
+                    </div>
+                )}
+                {(searchTerm || typeFilter || recurringFilter) && (
+                    <Button variant='outline' size={'icon'} onClick={handleClearFilters} title='clearFilter'>
+                        <X className='h-4 w-5' />
+                    </Button>
+                )}
+            </div>
+
+        </div>
 
         {/* Transactions */}
         <div className='rounded-md border'>
