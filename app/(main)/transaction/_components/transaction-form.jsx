@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect } from 'react'
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import ReceiptScanner from './receipt-scanner';
 
 const AddTransactionForm = ({ accounts, categories }) => {
 
@@ -70,9 +71,25 @@ const AddTransactionForm = ({ accounts, categories }) => {
 
     const filteredCategories = categories.filter(cat => cat.type === type);
 
+    const handleScanComplete = (scannedData) => {
+        if(scannedData) {
+            setValue("amount", scannedData.amount.toString());
+            setValue("date", new Date(scannedData.date));
+            if (scannedData.category) {
+                setValue("category", scannedData.category);
+            }
+            if (scannedData.description)  {
+                setValue("description", scannedData.description);
+            }
+            toast.success("Receipt scanned successfully");
+        }
+        
+    }
+
   return (
     <form className='space-y-6' onSubmit={handleSubmit(onSubmit)}>
         {/* AI Recipt Scanner */}
+        <ReceiptScanner onScanComplete={handleScanComplete} />
 
         <div className='space-y-2'>
             <label className="text-sm font-medium">Type</label>
@@ -143,7 +160,7 @@ const AddTransactionForm = ({ accounts, categories }) => {
             <label className="text-sm font-medium">Catergory</label>
             <Select
                 onValueChange={(value) => setValue("category", value)}
-                defaultValue={getValues("category")}
+                value={getValues("category")}
             >
                 <SelectTrigger className={"w-full"}>
                     <SelectValue placeholder="Select catergory" />
