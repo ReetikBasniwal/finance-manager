@@ -149,7 +149,7 @@ const TransactionTable = ({ transactions }) => {
        {deleteLoading && <BarLoader className='mt-4' width={'100%'} color='#9333ea' />}
 
         {/* Filters */}
-        <div className='flex flex-col sm:flex-row gap-4'>
+        <div className='flex flex-col sm:flex-row gap-4 mb-2'>
             <div className='relative flex-1'>
                 <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground'/>
                 <Input 
