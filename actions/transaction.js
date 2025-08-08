@@ -92,7 +92,7 @@ export async function createTransaction(data) {
         revalidatePath("/dashboard");
         revalidatePath(`/account/${transaction.accountId}`);
 
-        return { success: true, transaction: serializeAmount(transaction) };
+        return { success: true, data: serializeAmount(transaction) };
     } catch (error) {
         throw new Error(`Failed to create transaction: ${error.message}`);
     }
@@ -105,6 +105,7 @@ function calculateNextRecurringDate(startDate, interval) {
     switch(interval) {
         case "DAILY":
             date.setDate(date.getDate() + 1);
+            break;
         case "WEEKLY":
             date.setDate(date.getDate() + 7);
             break;
@@ -183,3 +184,101 @@ export async function scanReceipt(file) {
         throw new Error(`Failed to scan receipt`);
     }
 }
+
+export async function getTransaction(id) {
+    const { userId } = await auth();
+    if(!userId) throw new Error("Unauthorized");
+
+    const user = await db.user.findUnique({
+        where: { clerkUserId: userId },
+    });
+
+    if(!user) {
+        throw new Error("User not found");
+    }
+
+    const transaction = await db.transaction.findUnique({
+        where: {
+            id,
+            userId: user.id
+        }
+    });
+
+    if(!transaction) throw new Error("Transaction not found");
+
+    return serializeAmount(transaction);
+}
+
+export async function updateTransaction(id, data) {
+    try {
+        const { userId } = await auth();
+        if(!userId) throw new Error("Unauthorized");
+
+        const user = await db.user.findUnique({
+            where: { clerkUserId: userId },
+        });
+
+        if(!user) {
+            throw new Error("User not found");
+        }
+
+        const originalTransaction = await db.transaction.findUnique({
+            where: {
+                id,
+                userId: user.id
+            },
+            include: {
+                account: true,
+            }
+        });
+
+        if(!originalTransaction) throw new Error("Transaction not found");
+
+        const oldBalanceChange = 
+            originalTransaction.type === "INCOME" 
+            ? originalTransaction.amount.toNumber() 
+            : -originalTransaction.amount.toNumber();
+
+        const newBalanceChange = 
+            data.type === "INCOME" ? data.amount : -data.amount;
+
+        const netBalanceChange = newBalanceChange - oldBalanceChange;
+
+        // Update transaction and account balance in a transaction
+        const transaction = await db.$transaction(async (tx) => {
+            const updated = await tx.transaction.update({
+                where: {
+                    id,
+                    userId: user.id
+                },
+                data: {
+                    ...data,
+                    nextRecurringDate: 
+                        data.isRecurring && data.recurringInterval 
+                        ? calculateNextRecurringDate(data.date, data.recurringInterval) 
+                        : null
+                }
+            });
+
+            // Update account balance
+            await tx.account.update({
+                where: { id: originalTransaction.accountId },
+                data: {
+                    balance: {
+                        increment: netBalanceChange,
+                    },
+                }
+            });
+
+            return updated;
+        });
+
+        revalidatePath("/dashboard");
+        revalidatePath(`/account/${transaction.accountId}`);
+
+        return { success: true, data: serializeAmount(transaction) };
+    } catch (error) {
+        throw new Error(`Failed to update transaction: ${error.message}`);
+    }
+}
+
