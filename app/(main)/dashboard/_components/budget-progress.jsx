@@ -50,7 +50,7 @@ const BudgetProgress = ({ initialBudget, currentExpenses }) => {
         if(error) {
           toast.error(error.message || "Failed to update budget");
         }
-      }, [error])
+    }, [error])
     
 
     const handleCancel = () => {
