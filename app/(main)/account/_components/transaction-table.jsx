@@ -59,7 +59,7 @@ const TransactionTable = ({ transactions }) => {
 
     useEffect(() => {
         if(deleted && !deleteLoading) {
-            toast.error("Transactions deleted successfully");
+            toast.success("Transactions deleted successfully");
         }
     },[deleted, deleteLoading]);
 
