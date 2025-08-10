@@ -1,21 +1,23 @@
-import { createMiddleware } from '@arcjet/next';
+import arcjet, { createMiddleware, detectBot, shield } from '@arcjet/next';
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-import arcjet, { detectBot } from 'arcjet';
+import { NextResponse } from 'next/server';
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/account(.*)",
-  "/transaction(.*)"
+  "/transaction(.*)",
 ]);
 
 const aj = arcjet({
   key: process.env.ARCJET_KEY,
   rules: [
-    shield({ mode: 'LIVE' }),
-    detectBot({
-      mode: 'LIVE',
-      allow: ["CATEGORY:SEARCH_ENGINE", "GP_HTTP"]
-    })
+    // Only enable strict protection in production
+    ...(process.env.NODE_ENV === 'production' ? [
+      detectBot({
+        mode: 'LIVE',
+        allow: ["CATEGORY:SEARCH_ENGINE", "GP_HTTP"]
+      })
+    ] : [])
   ]
 })
 
@@ -24,6 +26,8 @@ const clerk =  clerkMiddleware(async (auth, req) => {
   if (!userId && isProtectedRoute(req)) {
     return redirectToSignIn();
   }
+
+  return NextResponse.next();
 });
 
 export default createMiddleware(aj, clerk);
