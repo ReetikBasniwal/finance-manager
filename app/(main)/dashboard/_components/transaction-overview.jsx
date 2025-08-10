@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Card,
     CardContent,
@@ -32,6 +32,10 @@ const DashboardOverview = ({ accounts, transactions }) => {
     const [selectedAccountId, setSelectedAccountId] = useState(
         accounts.find((a) => a.isDefault)?.id || accounts[0]?.id
     );
+
+    useEffect(() => {
+        setSelectedAccountId(accounts.find((a) => a.isDefault)?.id || accounts[0]?.id);
+    },[accounts])
 
     const accountTransactions = transactions.filter(
         (t) => t.accountId === selectedAccountId
@@ -125,7 +129,7 @@ console.log(pieChartData, "pieChartData");
                                             ): (
                                                 <ArrowUpRight className='mr-1 h-4 w-4' />
                                             )}
-                                            ${transaction.amount.toFixed(2)}
+                                            ₹{transaction.amount.toFixed(2)}
                                         </div>
                                     </div>
                                 </div>
@@ -157,7 +161,7 @@ console.log(pieChartData, "pieChartData");
                                     outerRadius={80}
                                     fill="#8884d8"
                                     dataKey="value"
-                                    label={({ name, value }) => `${name}: $${value.toFixed(2)}`}
+                                    label={({ name, value }) => `${name}: ₹${value.toFixed(2)}`}
                                 >
                                     {pieChartData.map((entry, index) => (
                                         <Cell 

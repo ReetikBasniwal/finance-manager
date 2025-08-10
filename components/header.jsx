@@ -20,6 +20,7 @@ const Header = async () => {
             height={10} 
             alt="Logo"
             className='object-contain'
+            style={{ transform: 'scale(2)' }}
           />
         </Link>
 
