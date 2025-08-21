@@ -3,7 +3,7 @@
 import { scanReceipt } from '@/actions/transaction';
 import { Button } from '@/components/ui/button';
 import useFetch from '@/hooks/use-fetch';
-import { Camera, Loader2 } from 'lucide-react';
+import { Loader2, ScanText } from 'lucide-react';
 import React, { useEffect, useRef } from 'react'
 import { toast } from 'sonner';
 
@@ -54,12 +54,12 @@ const ReceiptScanner = ({ onScanComplete }) => {
       >
         {scanReceiptLoading ? (
           <>
-            <Loader2 className="animate-spin mr-2" />
+            <Loader2 className="animate-spin mr-1" />
             <span>Scanning Receipt...</span>
           </>
         ) : (
           <>
-            <Camera className="mr-2" />
+            <ScanText className="mr-1" style={{ height: '26px', width: '26px' }} strokeWidth={1.5}/>
             <span>Scan Receipt with AI</span>
           </>
         )}

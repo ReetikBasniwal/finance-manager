@@ -18,6 +18,7 @@ import React, { useEffect } from 'react'
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import ReceiptScanner from './receipt-scanner';
+import UploadTransactions from './upload-statements';
 
 const AddTransactionForm = ({ accounts, categories, editMode, initialData }) => {
 
@@ -111,8 +112,13 @@ const AddTransactionForm = ({ accounts, categories, editMode, initialData }) => 
 
   return (
     <form className='space-y-6' onSubmit={handleSubmit(onSubmit)}>
-        {/* AI Recipt Scanner */}
-        {!editMode && <ReceiptScanner onScanComplete={handleScanComplete} />}
+        {!editMode && <div className='flex flex-col gap-4'>
+            {/* AI Recipt Scanner */}
+            <ReceiptScanner onScanComplete={handleScanComplete} />
+
+            {/* Upload Statments */}
+            <UploadTransactions accountId={getValues('accountId')}/>
+        </div>}
 
         <div className='space-y-2'>
             <label className="text-sm font-medium">Type</label>
@@ -183,7 +189,7 @@ const AddTransactionForm = ({ accounts, categories, editMode, initialData }) => 
             <label className="text-sm font-medium">Catergory</label>
             <Select
                 onValueChange={(value) => setValue("category", value)}
-                value={getValues("category")}
+                defaultValue={getValues("category")}
             >
                 <SelectTrigger className={"w-full"}>
                     <SelectValue placeholder="Select catergory" />
