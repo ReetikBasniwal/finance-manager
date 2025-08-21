@@ -282,3 +282,180 @@ export async function updateTransaction(id, data) {
     }
 }
 
+export async function scanBulkTransactions(file, accountId) {
+    try {
+        const { userId } = await auth();
+        if(!userId) throw new Error("Unauthorized");
+
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // Convert File to ArrayBuffer
+        const arrayBuffer = await file.arrayBuffer();
+        const base64String = Buffer.from(arrayBuffer).toString('base64');
+
+        const prompt = `
+            Analyze this bank statement and extract all transactions in JSON format.
+            
+            For each transaction, provide:
+            - amount: number (positive for credit/income, negative for debit/expense)
+            - date: ISO date string (YYYY-MM-DD)
+            - description: string (transaction description from statement)
+            - type: "INCOME" for credits, "EXPENSE" for debits
+            - category: string (choose from these exact categories)
+            
+            Available categories:
+            INCOME: "Salary", "Freelance", "Investments", "Business", "Rental", "Other Income"
+            EXPENSE: "Housing", "Transportation", "Groceries", "Utilities", "Entertainment", "Food", "Shopping", "Healthcare", "Education", "Personal Care", "Travel", "Insurance", "Gifts & Donations", "Bills & Fees", "Other Expenses"
+            
+            Return ONLY a valid JSON array like this:
+            [
+                {
+                    "amount": 5000,
+                    "date": "2024-01-15",
+                    "description": "Salary Credit",
+                    "type": "INCOME",
+                    "category": "Salary"
+                },
+                {
+                    "amount": -1200,
+                    "date": "2024-01-16",
+                    "description": "ATM Withdrawal",
+                    "type": "EXPENSE",
+                    "category": "Other Expenses"
+                }
+            ]
+            
+            If it's not a bank statement, return an empty array [].
+            Ensure all amounts are numbers (positive for income, negative for expenses).
+            Use the exact category names provided above.
+        `;
+
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    data: base64String,
+                    mimeType: file.type,
+                },
+            },
+            prompt
+        ]);
+
+        const response = await result.response;
+        const text = response.text();
+        const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+        console.log(response, "response AI");
+        try {
+            const transactions = JSON.parse(cleanedText);
+
+            if (!Array.isArray(transactions)) {
+                throw new Error("Response is not an array");
+            }
+
+            const processedTransactions = transactions.map(tx => ({
+                amount: Math.abs(parseFloat(tx.amount)), // Always positive for database
+                date: new Date(tx.date),
+                description: tx.description,
+                type: tx.type,
+                category: tx.category,
+                userId: userId,
+                accountId: null, // Will be set by the caller
+                isRecurring: false
+            }));
+
+            if (processedTransactions.length > 0) {
+                console.log(accountId, "accountId");
+                const bulkResult = await createBulkTransactions(processedTransactions, accountId);
+                return {
+                    success: true,
+                    transactions: bulkResult.transactions,
+                    count: bulkResult.count,
+                    message: `Successfully created ${bulkResult.count} transactions!`
+                };
+            }
+
+            return {
+                success: true,
+                transactions: processedTransactions,
+                count: processedTransactions.length
+            };
+        } catch (parseError) {
+            console.error("Error parsing JSON response:", parseError);
+            throw new Error("Invalid response format from AI model");
+        }
+        
+    } catch (error) {
+        console.error("Error creating bulk transactions:", error.message);
+        throw new Error(`Failed to create transactions`);
+    }
+}
+
+export async function createBulkTransactions(transactions, accountId) {
+    try {
+        const { userId } = await auth();
+        if(!userId) throw new Error("Unauthorized");
+
+        const user = await db.user.findUnique({  
+            where: { clerkUserId: userId },
+        });
+
+        if(!user) {
+            throw new Error("User not found");
+        }
+
+        const account = await db.account.findUnique({
+            where: {
+                id: accountId,
+                userId: user.id
+            }
+        });
+
+        if(!account) {
+            throw new Error("Account not found");
+        }
+
+        // Calculate total balance change
+        let totalBalanceChange = 0;
+        transactions.forEach(tx => {
+            const balanceChange = tx.type === "INCOME" ? tx.amount : -tx.amount;
+            totalBalanceChange += balanceChange;
+        });
+
+        // Create all transactions and update account balance in one transaction
+        const result = await db.$transaction(async (tx) => {
+            const createdTransactions = [];
+            
+            for (const transactionData of transactions) {
+                const transaction = await tx.transaction.create({
+                    data: {
+                        ...transactionData,
+                        userId: user.id,
+                        accountId: accountId,
+                    },
+                });
+                createdTransactions.push(transaction);
+            }
+
+            // Update account balance
+            await tx.account.update({
+                where: { id: accountId },
+                data: { 
+                    balance: account.balance.toNumber() + totalBalanceChange 
+                },
+            });
+
+            return createdTransactions;
+        });
+
+        revalidatePath("/dashboard");
+        revalidatePath(`/account/${accountId}`);
+
+        return { 
+            success: true,
+            transactions: result.map(serializeAmount),
+            count: result.length 
+        };
+
+    } catch (error) {
+        throw new Error(`Failed to create bulk transactions: ${error.message}`);
+    }
+}
