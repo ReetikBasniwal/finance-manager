@@ -2,7 +2,6 @@ import HeroSection from "@/components/hero";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { featuresData, howItWorksData, statsData, testimonialsData } from "@/data/landing";
-import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
@@ -76,12 +75,11 @@ export default function Home() {
                 <Card key={ind}>
                   <CardContent className={"space-y-4 pt-4"}>
                     <div className="flex items-center mb-4">
-                      <Image 
+                      <img 
                         src={testimonial.image} 
                         alt={testimonial.name} 
                         width={40} height={40} 
                         className="rounded-full" 
-                        unoptimized
                       />
                       <div className="ml-4">
                         <div className="font-semibold">{testimonial.name}</div>
