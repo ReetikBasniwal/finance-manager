@@ -4,11 +4,11 @@ const nextConfig = {
     images: {
         remotePatterns: [
             {
-                protocol: "https",
-                hostname: "randomuser.me",
-            }
+              protocol: "https",
+              hostname: "randomuser.me",
+              pathname: "/api/**",
+            },
         ],
-        domains: ["randomuser.me"],
     },
     experimental: {
         serverActions: {
