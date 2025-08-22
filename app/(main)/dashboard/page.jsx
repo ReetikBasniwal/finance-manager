@@ -10,7 +10,10 @@ import DashboardOverview from './_components/transaction-overview'
 
 async function DashboardPage() {
 
-  const accounts = await getUserAccounts();
+  const [accounts, transactions] = await Promise.all([
+    getUserAccounts(),
+    getDashboardData(),
+  ]);
 
   const defaultAccount = accounts?.find((account) => account.isDefault);
 
@@ -18,8 +21,6 @@ async function DashboardPage() {
   if(defaultAccount) {
     budgetData = await getCurrentBudget(defaultAccount.id);
   }
-
-  const transactions = await getDashboardData();
 
   return (
     <div className='space-y-8'>
@@ -50,11 +51,12 @@ async function DashboardPage() {
           </Card>
         </CreateAccountDrawere>
         
-        {accounts.length && 
+        {accounts?.length ? 
           accounts?.map((account) => {
             return <AccountCard key={account.id} account={account} />
-          }
-        )}
+          })
+          : <></>
+        }
       </div>
     </div>
   )
