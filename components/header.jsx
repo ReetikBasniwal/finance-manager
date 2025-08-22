@@ -12,7 +12,7 @@ const Header = async () => {
   return (
     <div className='fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b'>
 
-      <nav className='container mx-auto px-4 flex items-center justify-between'>
+      <nav className='container mx-auto px-4 flex items-center justify-between overflow-hidden'>
         <Link href={"/"}>
           <Image 
             src="/logo.png" 
