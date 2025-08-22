@@ -7,7 +7,8 @@ const nextConfig = {
                 protocol: "https",
                 hostname: "randomuser.me",
             }
-        ]
+        ],
+        domains: ["randomuser.me"],
     },
     experimental: {
         serverActions: {
