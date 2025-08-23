@@ -284,6 +284,11 @@ export async function updateTransaction(id, data) {
 
 export async function scanBulkTransactions(file, accountId) {
     try {
+        console.log("Starting scanBulkTransactions");
+        console.log("File size:", file?.size);
+        console.log("Account ID:", accountId);
+        console.log("GEMINI_API_KEY exists:", !!process.env.GEMINI_API_KEY);
+
         const { userId } = await auth();
         if(!userId) throw new Error("Unauthorized");
 
@@ -385,6 +390,11 @@ export async function scanBulkTransactions(file, accountId) {
         
     } catch (error) {
         console.error("Error creating bulk transactions:", error.message);
+        console.error("Detailed error in scanBulkTransactions:", {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
         throw new Error(`Failed to create transactions`);
     }
 }
