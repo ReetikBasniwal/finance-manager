@@ -423,37 +423,32 @@ export async function createBulkTransactions(transactions, accountId) {
             throw new Error("Account not found");
         }
 
-        // Calculate total balance change
+        // Create transactions one by one (simpler, more reliable)
+        const createdTransactions = [];
         let totalBalanceChange = 0;
-        transactions.forEach(tx => {
-            const balanceChange = tx.type === "INCOME" ? tx.amount : -tx.amount;
-            totalBalanceChange += balanceChange;
-        });
 
-        // Create all transactions and update account balance in one transaction
-        const result = await db.$transaction(async (tx) => {
-            const createdTransactions = [];
-            
-            for (const transactionData of transactions) {
-                const transaction = await tx.transaction.create({
-                    data: {
-                        ...transactionData,
-                        userId: user.id,
-                        accountId: accountId,
-                    },
-                });
-                createdTransactions.push(transaction);
-            }
-
-            // Update account balance
-            await tx.account.update({
-                where: { id: accountId },
-                data: { 
-                    balance: account.balance.toNumber() + totalBalanceChange 
+        for (const transactionData of transactions) {
+            const transaction = await db.transaction.create({
+                data: {
+                    ...transactionData,
+                    userId: user.id,
+                    accountId: accountId,
                 },
             });
+            
+            createdTransactions.push(transaction);
+            
+            // Calculate balance change
+            const balanceChange = transactionData.type === "INCOME" ? transactionData.amount : -transactionData.amount;
+            totalBalanceChange += balanceChange;
+        }
 
-            return createdTransactions;
+        // Update account balance
+        await db.account.update({
+            where: { id: accountId },
+            data: { 
+                balance: account.balance.toNumber() + totalBalanceChange 
+            },
         });
 
         revalidatePath("/dashboard");
@@ -461,11 +456,12 @@ export async function createBulkTransactions(transactions, accountId) {
 
         return { 
             success: true,
-            transactions: result.map(serializeAmount),
-            count: result.length 
+            transactions: createdTransactions.map(serializeAmount),
+            count: createdTransactions.length 
         };
 
     } catch (error) {
+        console.error("Error in createBulkTransactions:", error);
         throw new Error(`Failed to create bulk transactions: ${error.message}`);
     }
 }
